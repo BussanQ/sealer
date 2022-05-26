@@ -21,6 +21,7 @@ import (
 	"github.com/sealerio/sealer/logger"
 	v2 "github.com/sealerio/sealer/types/api/v2"
 	"github.com/sealerio/sealer/utils"
+	"github.com/sealerio/sealer/utils/platform"
 )
 
 type Interface interface {
@@ -126,5 +127,12 @@ func (k *KubeadmRuntime) UpdateCert(certs []string) error {
 // NewDefaultRuntime arg "clusterfileKubeConfig" is the Clusterfile path/name, runtime need read kubeadm config from it
 // Mount image is required before new Runtime.
 func NewDefaultRuntime(cluster *v2.Cluster, clusterfileKubeConfig *KubeadmConfig) (Interface, error) {
+	meta, err := LoadMetadata(platform.DefaultMountCloudImageDir(cluster.Name))
+	if err != nil {
+		return nil, err
+	}
+	if meta.Version == "k3s" {
+		return newK3sRuntime(cluster, clusterfileKubeConfig)
+	}
 	return newKubeadmRuntime(cluster, clusterfileKubeConfig)
 }
